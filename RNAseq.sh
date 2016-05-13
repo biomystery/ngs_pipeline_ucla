@@ -1,45 +1,50 @@
 #This applies to 
-	
+proj_path="/mnt/biggie/no_backup/frank/kim/hiseq4000/"
+fastq_path="/home/shared/dropbox/kim/rnaseq/"
+step1="01fastqc/"
+step2="02trim/"
+step3="03fastqc/"
+step4="04fastqc/"
+
+echo  ${proj_path}${step1_fastqc}
+ls  ${proj_path}${step1_fastqc}
+ls  ${fastq_path}
+mkdir -p $proj_path
+
+
 #  1. QC of sequencing reads
-mkdir /mnt/biggie/no_backup/frank/caRNA/batch3/01fastqc
+mkdir $proj_path'01fastqc'
 
 qcfun (){
     while read data; do
-        fastqc -t 4 -outdir /mnt/biggie/no_backup/frank/caRNA/batch3/01fastqc &
+        fastqc -t 2 -outdir $proj_path'01fastqc' $data &
     done
 }
 
-ls /home/shared/dropbox/supriya/caRNA/batch3/*.fastq | qcfun
+cd $fastq_path
+ls *.fastq | qcfun
 
 
 #find /home/shared/dropbox/supriya/caRNA/batch3/ -name '*.fastq'|  xargs -n 1 fastqc -t 4 -outdir /mnt/biggie/no_backup/frank/caRNA/batch3/01fastqc &
 
-# 2.  Read trimming
+# 2.  trimming
 
-mkdir /mnt/biggie/no_backup/frank/caRNA/batch3/02trim
-
+mkdir $proj_path$step2
 trimfun () {
-    local STR=".trim.fastq"
-    local DIR="/mnt/biggie/no_backup/frank/caRNA/batch3/02trim/"
-    cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  $1 -o $DIR$1$STR 
-}
-
-wrapfun (){
     while read data; do 
-	trimfun "$data" &
+        cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  $data -o $proj_path'02trim/'$data".trim.fastq" &
     done
 }
 
-cd /home/shared/dropbox/supriya/caRNA/batch3/
-ls  | wrapfun 
+ls | trimfun &
 
 
 # 3. qc of trimed fastqc
-mkdir /mnt/biggie/no_backup/frank/caRNA/batch3/03fastqc
-ls | fastqc  -t 4 -outdir /mnt/biggie/no_backup/frank/caRNA/batch3/03fastqc 
+mkdir $proj_path$step3
+#ls | fastqc  -t 4 -outdir /mnt/biggie/no_backup/frank/caRNA/batch3/03fastqc 
 qcfun (){
     while read data; do
-        fastqc  -t 4 -outdir /mnt/biggie/no_backup/frank/caRNA/batch3/03fastqc $data &
+        fastqc  -t 4 -outdir $proj_path$step3 $data &
     done
 }
 
