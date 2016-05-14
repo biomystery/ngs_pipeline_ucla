@@ -3,6 +3,7 @@ proj_path="/mnt/biggie/no_backup/frank/kim/hiseq4000/"
 fastq_path="/home/shared/dropbox/kim/rnaseq/"
 step1="01fastqc/"
 step2="02trim/"
+step_back_fastq="00fasq"
 step3="03fastqc/"
 step4="04fastqc/"
 
@@ -38,44 +39,44 @@ trimfun () {
 
 ls | trimfun &
 
+mkdir $proj_path$step_back_fastq
+cd $fastq_path
+ls | while read data; do sudo gzip -9 $data &  done
+sudo mv ${fastq_path}'*' $proj_path$step_back_fastq & 
 
 # 3. qc of trimed fastqc
 mkdir $proj_path$step3
+
 #ls | fastqc  -t 4 -outdir /mnt/biggie/no_backup/frank/caRNA/batch3/03fastqc 
 qcfun (){
     while read data; do
-        fastqc  -t 4 -outdir $proj_path$step3 $data &
+        fastqc  -t 2 -outdir $proj_path$step3 $data &
     done
 }
-
-ls /mnt/biggie/no_backup/frank/caRNA/batch3/02trim/*.fastq | qcfun
+cd $proj_path$step2
+ls $proj_path$step2 | qcfun
+ls *.fastq | qcfun
 
 		
 #	4. Mapping
-mkdir /mnt/biggie/no_backup/frank/caRNA/batch3/04align
+mkdir $proj_path$step4
 
-
-s1="../04align/"
 starfun (){
     while read data; do
-	STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.50bp --runThreadN 2 --readFilesIn $data --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate -- limitBAMsortRAM 17179869184 --outFilterType BySJout --outFilterMultimapNmax 20 -- alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 -- outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 -- seedSearchStartLmax 30 --outFileNamePrefix ${s1}"$data" --genomeLoad LoadAndKeep --readFilesCommand gunzip -c &
+	STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.50bp --runThreadN 2 --readFilesIn $data --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate -- limitBAMsortRAM 17179869184 --outFilterType BySJout --outFilterMultimapNmax 20 -- alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 -- outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 -- seedSearchStartLmax 30 --outFileNamePrefix $proj_path$step4$data --genomeLoad LoadAndKeep #--readFilesCommand gunzip -c &
     done
 }
 
-        echo  ${s1}"$data"
-
-
-
-cd /mnt/biggie/no_backup/frank/caRNA/batch3/02trim/
-ls /mnt/biggie/no_backup/frank/caRNA/batch3/02trim/*.fastq | starfun &
+cd $proj_path$step2
+ls  | starfun 
 
 
 
 
-find -name '*.fastq'|  xargs -n 1 gzip -9 &
-find -name '*.fastq'|  while read data;do  gzip -9 "$data" &  done 
-gzip -9  sample.fastq &
-gzip -9  trimmed.fastq &
+#find -name '*.fastq'|  xargs -n 1 gzip -9 &
+#find -name '*.fastq'|  while read data;do  gzip -9 "$data" &  done 
+#gzip -9  sample.fastq &
+#gzip -9  trimmed.fastq &
 		
 samtools index Aligned.sortedByCoord.out.bam
 		
