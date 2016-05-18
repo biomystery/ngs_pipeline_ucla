@@ -15,11 +15,12 @@ step6="06qualimap/"
 step7="07count/"
 step8="08tracks/"
 homeDir=$HOME'/'
+barcodefile=$fastq_path"xx_barcode/barcode.txt"
 
 ############################################################
 # Download & convert
 ############################################################
-mkdir $step0; cd $step0
+mkdir cd $fastq_path$step0; cd $fastq_path$step0
 grab_bscrc  SxaQSEQsVA107L7:KN6ga9yV3cG6
 
 #ls -1 s_7_1* | while read data; do echo ${data:6:4}; done  > name1.txt
@@ -28,6 +29,9 @@ grab_bscrc  SxaQSEQsVA107L7:KN6ga9yV3cG6
 # with anonymous pipe 
 #diff <(ls -1 s_7_1* | while read data; do echo ${data:6:4}; done) <(ls -1 s_7_2* | while read data; do echo ${data:6:4}; done)
 #diff <(ls -1 *.txt | while read data; do echo ${data:6:10}; done) <(ls -1 *.fastq | while read data; do echo ${data:6:4}; done)
+#diff <(ls -1 *.f | while read data; do echo ${data:6:10}; done) <(ls -1 *.fastq | while read data; do echo ${data:6:4}; done)
+
+diff <(ls -1 *_1_*.fastq | while read data; do echo ${data:6:4}; done) <(ls -1 *_2_*.fastq | while read data; do echo ${data:6:4}; done)
 
 ls -1 * | while read data; do  qseq2fastq.pl $data ${data:0:10}'.fastq' & done
 
@@ -41,7 +45,7 @@ qseq2fastqfunc (){
 ls -1 *.txt | parallel -j 48 --eta qseq2fastqfunc
 
 # Demultiplex FASTQ
-barcodefile=$fastq_path"xx_barcode/VA107L7.txt"
+
 mkdir ../02_consolidated
 
 demultiplexFun (){
@@ -55,24 +59,56 @@ demultiplexFun (){
     done
 }
 export -f demultiplexFun
-ls -1 *_1_*.fastq | parallel -j 48 --eta demultiplexFun 
+#ls -1 *_1_*.fastq | parallel -j 48 --eta demultiplexFun 
 
+demultiplexFunMuticore (){
+    count=1;ncore=48;
+    while read data
+    do
+        suffix=${data:5:11}
+        echo 'processing:'$suffix
+        idxfile=$(echo "$data" |sed -r 's/_1_/_2_/')
+        echo "using idx file: "$idxfile
+        echo "calulating no.$count sampling ......"
+        if [ `echo $count" % "$ncore | bc` -eq 0 ] #mod ncore
+        then
+            cat $data | fastx_barcode_splitter.pl --bcfile $barcodefile --prefix ../02_consolidated/ --suffix $suffix --idxfile $idxfile --mismatches 1
+        else
+            cat $data | fastx_barcode_splitter.pl --bcfile $barcodefile --prefix ../02_consolidated/ --suffix $suffix --idxfile $idxfile --mismatches 1 &
+        fi
+        count=$((count+1))
+    done
+}
 
+ls -1 *_1_*.fastq | demultiplexFunMuticore
 
+# check if all files demultiplexed
+diff <(ls -1 ../02_consolidated/ifnar-0*.fastq |  while read data; do echo ${data: -11}; done) <(ls -1 *_2_*.fastq | while read data; do echo ${data:5:11}; done)
 
+# head -c 2 # check the first two characters 
 
-cat s_7_1_1101.fastq | fastx_barcode_splitter.pl --bcfile $barcodefile --prefix 02_consolidated/ --suffix _1101.fastq --idxfile s_7_2_1101.fastq --mismatches 1 &
+# 4. Merge FASTQ
+cd ../02_consolidated/
+while read line; do
+    prefix=$(echo -e "$line" | cut -f1 -d$'\t')
+    #eval "ls ${prefix}* "
+    #eval "cat ${prefix}* > ${prefix}.fastq && rm ${prefix}_* &"
+    eval "rm ${prefix}_* " 
+done<$barcodefile
 
+# cat alpha-0_*.fastq >alpha-0.fastq
 
+# 5. remove tmp files 
+
+#------------------------------------------------------------
+#  1. QC of sequencing reads
+#------------------------------------------------------------
 
 echo  ${proj_path}${step1_fastqc}
 ls  ${proj_path}${step1_fastqc}
 ls  ${fastq_path}
 mkdir -p $proj_path
 
-#------------------------------------------------------------
-#  1. QC of sequencing reads
-#------------------------------------------------------------
 mkdir $proj_path'01fastqc'
 
 qcfun (){
