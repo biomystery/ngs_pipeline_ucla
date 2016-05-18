@@ -1,6 +1,10 @@
-#This applies to 
-proj_path="/mnt/biggie/no_backup/frank/kim/hiseq4000/"
-fastq_path="/home/shared/dropbox/kim/rnaseq/"
+# the full pipeline for caRNA seq analysis of the 2000 
+rsync -a zhangcheng@164.67.9.46:~/xx_barcode ./
+
+# define paths & steps here 
+#proj_path="/mnt/biggie/no_backup/frank/kim/hiseq4000/"
+fastq_path="/home/frank/caRNA/2000/"
+step0="00raw/"
 step1="01fastqc/"
 step2="02trim/"
 step_back_fastq="00fasq"
@@ -12,13 +16,63 @@ step7="07count/"
 step8="08tracks/"
 homeDir=$HOME'/'
 
+############################################################
+# Download & convert
+############################################################
+mkdir $step0; cd $step0
+grab_bscrc  SxaQSEQsVA107L7:KN6ga9yV3cG6
+
+#ls -1 s_7_1* | while read data; do echo ${data:6:4}; done  > name1.txt
+#ls -1 s_7_2* | while read data; do echo ${data:6:4}; done  > name2.txt
+#diff name1.txt name2.txt
+# with anonymous pipe 
+#diff <(ls -1 s_7_1* | while read data; do echo ${data:6:4}; done) <(ls -1 s_7_2* | while read data; do echo ${data:6:4}; done)
+#diff <(ls -1 *.txt | while read data; do echo ${data:6:10}; done) <(ls -1 *.fastq | while read data; do echo ${data:6:4}; done)
+
+ls -1 * | while read data; do  qseq2fastq.pl $data ${data:0:10}'.fastq' & done
+
+qseq2fastqfunc (){
+    while read data
+    do
+        qseq2fastq.pl $data ${data:0:10}'.fastq'
+    done
+}
+
+ls -1 *.txt | parallel -j 48 --eta qseq2fastqfunc
+
+# Demultiplex FASTQ
+barcodefile=$fastq_path"xx_barcode/VA107L7.txt"
+mkdir ../02_consolidated
+
+demultiplexFun (){
+    while read data
+    do
+        suffix=${data:5:11}
+        echo 'processing:'$suffix
+        idxfile=$(echo "$data" |sed -r 's/_1_/_2_/')
+        echo "using idx file: "$idxfile
+        cat $data | fastx_barcode_splitter.pl --bcfile $barcodefile --prefix ../02_consolidated/ --suffix $suffix --idxfile $idxfile --mismatches 1 
+    done
+}
+export -f demultiplexFun
+ls -1 *_1_*.fastq | parallel -j 48 --eta demultiplexFun 
+
+
+
+
+
+cat s_7_1_1101.fastq | fastx_barcode_splitter.pl --bcfile $barcodefile --prefix 02_consolidated/ --suffix _1101.fastq --idxfile s_7_2_1101.fastq --mismatches 1 &
+
+
+
 echo  ${proj_path}${step1_fastqc}
 ls  ${proj_path}${step1_fastqc}
 ls  ${fastq_path}
 mkdir -p $proj_path
 
-
+#------------------------------------------------------------
 #  1. QC of sequencing reads
+#------------------------------------------------------------
 mkdir $proj_path'01fastqc'
 
 qcfun (){
