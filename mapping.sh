@@ -27,33 +27,28 @@ let TOTAL_PROC_NO=$SAMPLE_NO*$NPROC_PER_SAMPLE # calculate number of total proce
 #  1.1 QC of sequencing reads
 #------------------------------------------------------------
 WORKING_DIR=$FASTQ_DIR'/fastqc';mkdir $WORKING_DIR
-qcfun (){
-    while read data; do
-        fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR $data &
-    done
-}
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "Starting Step 1.1: QC of consolidated FASTQ files" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
-ls -1 *.fastq | qcfun 1>>$PARENT_DIR"/run.log.txt" 2>>$PARENT_DIR"/run.log.txt"
+ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
+                      fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
+                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
+echo -e "Step 1.1 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 # 2. FASTQ trimming
 #------------------------------------------------------------
 WORKING_DIR=$PARENT_DIR'/02trim'; mkdir $WORKING_DIR;
 
-trimfun () {
-    while read data; do 
-        cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  $data -o $WORKING_DIR$data".trim.fastq" &
-    done
-}
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "Starting Step 2: trimming\n" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
-
-ls | trimfun  1>>$LOG_ERR_FILE 2>> $LOG_FILE
-
+ls -1 *.fastq | xargs -n1 -P $PROCESSORS_NO -i \
+                      cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  {} \
+                      -o $WORKING_DIR{}".trim.fastq" \
+                      1>>$LOG_ERR_FILE 2>> $LOG_FILE        
+wait;echo -e "Step 2 Finshed!"| tee -a $LOG_FILE
 
 # 1.1 qc of trimed fastqc
 echo -e "--------------------\n" | tee -a $LOG_FILE
@@ -61,24 +56,36 @@ echo -e "Starting Step 2.1: QC of trimed QC files" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
 cd $WORKING_DIR;WORKING_DIR=$WORKING_DIR'/fastqc';mkdir $WORKING_DIR
-ls -1 *.fastq | qcfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE
-
+ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
+                      fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
+                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
+wait;echo -e "Step 2.1 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 #3. Mapping/alignment. 
 #------------------------------------------------------------
 # 3.1 compress the trimed fastqc
 WORKING_DIR=$PARENT_DIR'/03alignment'; mkdir $WORKING_DIR;
-starfun (){
-    while read data; do
-	STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.50bp --runThreadN $NPROC_PER_SAMPLE --readFilesIn $data --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate --limitBAMsortRAM 17179869184 --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --seedSearchStartLmax 30 --outFileNamePrefix $WORKING_DIR'/'$data --genomeLoad LoadAndKeep --readFilesCommand gunzip -c &
-    done
-}
+	--readFilesCommand gunzip -c & 
+
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "Starting Step 3, total xx steps:\n" | tee -a $LOG_FILE
 echo -e "Starting Step 3.1: alignment\n" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
-ls -1 *.fastq.gz | starfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE
+
+ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
+                      STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.50bp \
+                      --runThreadN $NPROC_PER_SAMPLE --readFilesIn {} \
+                      --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate \
+                      --limitBAMsortRAM 17179869184 --outFilterType BySJout\
+                      --outFilterMultimapNmax 20 --alignSJoverhangMin 8\
+                      --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999\
+                      --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20\
+                      --alignIntronMax 1000000 --seedSearchStartLmax 30\
+                      --outFileNamePrefix $WORKING_DIR'/'{}\
+                       --genomeLoad LoadAndKeep \
+                       1>>$LOG_ERR_FILE 2>>$LOG_FILE
+wait;echo -e "Step 3.1 Finshed!" | tee -a $LOG_FILE
 
 # 3.2 compress the trimed fastqc
 echo -e "--------------------\n" | tee -a $LOG_FILE
@@ -86,14 +93,19 @@ echo -e "Starting Step 3.2: compress the trimed QC files" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
 ls -1 *.fastq | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee -a $LOG_FILE
-
+wait;echo -e "Step 3.2 Finshed!" | tee -a $LOG_FILE
 
 
 #------------------------------------------------------------
 # 4. index the bam file 
 #------------------------------------------------------------
-ls *.bam |while read data; do samtools index "$data"  & done 1>>$LOG_ERR_FILE 2>>$LOG_FILE
-
+echo -e "--------------------\n" | tee -a $LOG_FILE
+echo -e "Starting Step 4: index sam file" | tee -a $LOG_FILE
+echo -e "--------------------\n" | tee -a $LOG_FILE
+ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
+                    samtools index {} \
+                    1>>$LOG_ERR_FILE 2>>$LOG_FILE
+wait;echo -e "Step 4 Finshed!" | tee -a $LOG_FILE
 
 #5.  Filtering (multiple maping reads)
 mkdir $homeDir$step5
