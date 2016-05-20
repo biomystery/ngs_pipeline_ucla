@@ -1,8 +1,16 @@
 #!/bin/bash
 
 #------------------------------------------------------------
-# input parameters, check 
+# use read function to take input 
 #------------------------------------------------------------
+echo "Please input the password info (example: )\n"
+
+
+#------------------------------------------------------------
+# input parameters, check
+#------------------------------------------------------------
+
+
 E_WRONG_ARGS=85
 script_parameters="-w -p -m -z"
 # -w = working directory
