@@ -1,34 +1,37 @@
 #!/bin/bash
 # The Script for mapping
-############################################################
-# input parameters
-############################################################
+echo -e "############################################################"
+echo -e "(`date`) initating input parameters ....."
+echo -e "############################################################"
+
 #input 1: consolidated FASTQ Folder 
-echo -n "Setting folder \n" 
+echo -e "(`date`)Setting folder \n" 
 #read FASTQ_DIR # /home/frank/caRNA/2000/01_consolidated
 FASTQ_DIR=$PWD # /home/frank/caRNA/2000/01_consolidated
-echo -e "raw fastq folder is $FASTQ_DIR \n"
+echo -e "(`date`) raw fastq folder is $FASTQ_DIR \n"
 cd $FASTQ_DIR;cd ../; PARENT_DIR=$PWD; cd $FASTQ_DIR;
-echo -e "project folder is $PARENT_DIR \n"
-
+echo -e "(`date`) project folder is $PARENT_DIR \n"
 
 # log files
-
 LOG_FILE=$PARENT_DIR"/run.log.txt"; LOG_ERR_FILE=$PARENT_DIR"/run.err.txt"
 
 SAMPLE_NO=`ls -1 *.fastq|wc -l` 
 echo -e "There are $SAMPLE_NO samples in the folder ($FASTQ_DIR) \n" | tee -a $LOG_FILE
 
 #input 2: number of processors per sample for fastqc 
-echo -e " Enter the number of processor per sample \n" 
-read NPROC_PER_SAMPLE
-echo -e "input is $NPROC_PER_SAMPLE process per sample \n" | tee -a $LOG_FILE
+#echo -e " Enter the number of processor per sample \n" 
+#read NPROC_PER_SAMPLE
+NPROC_PER_SAMPLE=2
+echo -e " $NPROC_PER_SAMPLE process per sample \n" | tee -a $LOG_FILE
 let TOTAL_PROC_NO=$SAMPLE_NO*$NPROC_PER_SAMPLE # calculate number of total processor for the user
 
 
+echo -e "############################################################"
+echo -e "`date` Running the pipelines \n" 
+echo -e "############################################################"
 
 #------------------------------------------------------------
-#  1.1 QC of sequencing reads
+#  1 QC of the sequencing reads
 #------------------------------------------------------------
 WORKING_DIR=$FASTQ_DIR'/fastqc';mkdir $WORKING_DIR
 
@@ -38,7 +41,7 @@ echo -e "--------------------\n" | tee -a $LOG_FILE
 ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
                       fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
                       1>>$LOG_FILE 2>>$LOG_ERR_FILE
-echo -e "Step 1.1 Finshed!" | tee -a $LOG_FILE
+echo -e "(`date`) Step 1.1 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 # 2. FASTQ trimming
@@ -46,24 +49,24 @@ echo -e "Step 1.1 Finshed!" | tee -a $LOG_FILE
 WORKING_DIR=$PARENT_DIR'/02trim'; mkdir $WORKING_DIR;
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "Starting Step 2: trimming\n" | tee -a $LOG_FILE
+echo -e "(`date`) Starting Step 2: trimming\n" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 ls -1 *.fastq | xargs -n1 -P $PROCESSORS_NO -i \
                       cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  {} \
                       -o $WORKING_DIR{}".trim.fastq" \
                       1>>$LOG_ERR_FILE 2>> $LOG_FILE        
-wait;echo -e "Step 2 Finshed!"| tee -a $LOG_FILE
+wait;echo -e "(`date`) Step 2 Finshed!"| tee -a $LOG_FILE
 
 # 1.1 qc of trimed fastqc
 echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "Starting Step 2.1: QC of trimed QC files" | tee -a $LOG_FILE
+echo -e "(`date`) Starting Step 2.1: QC of trimed QC files" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
 cd $WORKING_DIR;WORKING_DIR=$WORKING_DIR'/fastqc';mkdir $WORKING_DIR
 ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
                       fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
                       1>>$LOG_FILE 2>>$LOG_ERR_FILE
-wait;echo -e "Step 2.1 Finshed!" | tee -a $LOG_FILE
+wait;echo -e "(`date`)Step 2.1 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 #3. Mapping/alignment. 
@@ -71,10 +74,11 @@ wait;echo -e "Step 2.1 Finshed!" | tee -a $LOG_FILE
 # 3.1 compress the trimed fastqc
 WORKING_DIR=$PARENT_DIR'/03alignment'; mkdir $WORKING_DIR;
 echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "Starting Step 3, total xx steps:\n" | tee -a $LOG_FILE
-echo -e "Starting Step 3.1: alignment\n" | tee -a $LOG_FILE
+echo -e "(`date`) Starting Step 3, total xx steps:\n" | tee -a $LOG_FILE
+echo -e "(`date`) Starting Step 3.1: alignment\n" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
+# --readFilesCommand gunzip -c \
 ls -1 *.gz | xargs -n1 -P $SAMPLE_NO -i \
                       STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.50bp \
                       --runThreadN $NPROC_PER_SAMPLE --readFilesIn {} \
@@ -86,17 +90,16 @@ ls -1 *.gz | xargs -n1 -P $SAMPLE_NO -i \
                       --alignIntronMax 1000000 --seedSearchStartLmax 30\
                       --outFileNamePrefix $WORKING_DIR'/'{}\
                       --genomeLoad LoadAndKeep \
-                      	--readFilesCommand gunzip -c \
-                        1>>$LOG_FILE 2>>$LOG_ERR_FILE 
+                      1>>$LOG_FILE 2>>$LOG_ERR_FILE 
 wait;echo -e "`date`: Step 3.1 Finshed!" | tee -a $LOG_FILE
 
 # 3.2 compress the trimed fastqc
 echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "Starting Step 3.2: compress the trimed QC files" | tee -a $LOG_FILE
+echo -e "(`date`)Starting Step 3.2: compress the trimed QC files" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
 ls -1 *.fastq | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee -a $LOG_FILE
-wait;echo -e "Step 3.2 Finshed!" | tee -a $LOG_FILE
+wait;echo -e "(`date`) Step 3.2 Finshed!" | tee -a $LOG_FILE
 
 
 #------------------------------------------------------------
@@ -104,12 +107,12 @@ wait;echo -e "Step 3.2 Finshed!" | tee -a $LOG_FILE
 #------------------------------------------------------------
 cd $WORKING_DIR
 echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "Starting Step 3.3: index sam file" | tee -a $LOG_FILE
+echo -e "(`date`) Starting Step 3.3: index sam file" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
                     samtools index {} \
                     1>>$LOG_ERR_FILE 2>>$LOG_FILE
-wait;echo -e "Step 3.3 Finshed!" | tee -a $LOG_FILE
+wait;echo -e "(`date`) Step 3.3 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 #4.  Filtering (multiple maping reads)
@@ -132,7 +135,7 @@ filterfun (){
 }
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "Starting Step 4: filtering the aligned bam files" | tee -a $LOG_FILE
+echo -e "(`date`) Starting Step 4: filtering the aligned bam files" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
 export -f filterfun
@@ -182,11 +185,11 @@ qualmapfun2 (){
 }
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "Starting Step 4.1: qualimap QC the mapping" | tee -a $LOG_FILE
+echo -e " (`date`) Starting Step 4.1: qualimap QC the mapping" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
 ls *.bam | qualmapfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE
-wait;echo -e "Step 4.1 Finshed!" | tee -a $LOG_FILE
+wait;echo -e "(`date`) Step 4.1 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 #5.  generate counts 
