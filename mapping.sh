@@ -4,21 +4,25 @@
 # input parameters
 ############################################################
 #input 1: consolidated FASTQ Folder 
-echo -n "1/2. Enter fastq folder \n" 
-read FASTQ_DIR # /home/frank/caRNA/2000/01_consolidated
-echo -e "input is $FASTQ_DIR \n"
+echo -n "Setting folder \n" 
+#read FASTQ_DIR # /home/frank/caRNA/2000/01_consolidated
+FASTQ_DIR=$PWD # /home/frank/caRNA/2000/01_consolidated
+echo -e "raw fastq folder is $FASTQ_DIR \n"
+cd $FASTQ_DIR;cd ../; PARENT_DIR=$PWD; cd $FASTQ_DIR;
+echo -e "project folder is $PARENT_DIR \n"
 
-cd $FASTQ_DIR;cd ../../; PARENT_DIR=$PWD; cd $FASTQ_DIR;
+
 # log files
+
 LOG_FILE=$PARENT_DIR"/run.log.txt"; LOG_ERR_FILE=$PARENT_DIR"/run.err.txt"
 
 SAMPLE_NO=`ls -1 *.fastq|wc -l` 
 echo -e "There are $SAMPLE_NO samples in the folder ($FASTQ_DIR) \n" | tee -a $LOG_FILE
 
 #input 2: number of processors per sample for fastqc 
-echo -e "2/2. Enter the number of processor per sample \n" 
+echo -e " Enter the number of processor per sample \n" 
 read NPROC_PER_SAMPLE
-echo -e "input is $NPROC_PER_SAMPLE\n"
+echo -e "input is $NPROC_PER_SAMPLE process per sample \n" | tee -a $LOG_FILE
 let TOTAL_PROC_NO=$SAMPLE_NO*$NPROC_PER_SAMPLE # calculate number of total processor for the user
 
 
@@ -66,14 +70,12 @@ wait;echo -e "Step 2.1 Finshed!" | tee -a $LOG_FILE
 #------------------------------------------------------------
 # 3.1 compress the trimed fastqc
 WORKING_DIR=$PARENT_DIR'/03alignment'; mkdir $WORKING_DIR;
-	--readFilesCommand gunzip -c & 
-
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "Starting Step 3, total xx steps:\n" | tee -a $LOG_FILE
 echo -e "Starting Step 3.1: alignment\n" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
-ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
+ls -1 *.gz | xargs -n1 -P $SAMPLE_NO -i \
                       STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.50bp \
                       --runThreadN $NPROC_PER_SAMPLE --readFilesIn {} \
                       --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate \
@@ -83,9 +85,10 @@ ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
                       --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20\
                       --alignIntronMax 1000000 --seedSearchStartLmax 30\
                       --outFileNamePrefix $WORKING_DIR'/'{}\
-                       --genomeLoad LoadAndKeep \
-                       1>>$LOG_ERR_FILE 2>>$LOG_FILE
-wait;echo -e "Step 3.1 Finshed!" | tee -a $LOG_FILE
+                      --genomeLoad LoadAndKeep \
+                      	--readFilesCommand gunzip -c \
+                        1>>$LOG_FILE 2>>$LOG_ERR_FILE 
+wait;echo -e "`date`: Step 3.1 Finshed!" | tee -a $LOG_FILE
 
 # 3.2 compress the trimed fastqc
 echo -e "--------------------\n" | tee -a $LOG_FILE
@@ -97,76 +100,117 @@ wait;echo -e "Step 3.2 Finshed!" | tee -a $LOG_FILE
 
 
 #------------------------------------------------------------
-# 4. index the bam file 
+# 3.1. index the bam file 
 #------------------------------------------------------------
+cd $WORKING_DIR
 echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "Starting Step 4: index sam file" | tee -a $LOG_FILE
+echo -e "Starting Step 3.3: index sam file" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
                     samtools index {} \
                     1>>$LOG_ERR_FILE 2>>$LOG_FILE
-wait;echo -e "Step 4 Finshed!" | tee -a $LOG_FILE
+wait;echo -e "Step 3.3 Finshed!" | tee -a $LOG_FILE
 
-#5.  Filtering (multiple maping reads)
-mkdir $homeDir$step5
-cd $homeDir$step4
-prefix=".filtered"
-filetype='.bam'
+#------------------------------------------------------------
+#4.  Filtering (multiple maping reads)
+#------------------------------------------------------------
+STEP='04filter'
+WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir $WORKING_DIR;
+
+
 filterfun (){
-    while read data; do
-        nameStr=$(echo "$data"| cut -f1 -d".")
-        #echo $nameStr
-        samtools view -F 2820 -q 30 -@ 2 -b $data > $homeDir$step5$nameStr$prefix$filetype & 
-    done
+    prefix=".filtered"
+    filetype='.bam'
+    data=$1
+    WORKING_DIR=$2; NPROC_PER_SAMPLE=$3
+     nameStr=$(echo "$data"| cut -f1 -d".")
+     #echo $nameStr
+     #echo $data
+     #echo $WORKING_DIR'/'$nameStr$prefix$filetype
+     #echo $NPROC_PER_SAMPLE
+     eval "samtools view -b -F 2820 -q 30 -@ $NPROC_PER_SAMPLE $data > $WORKING_DIR/$nameStr$prefix$filetype"
 }
-ls *.bam | filterfun
+
+echo -e "--------------------\n" | tee -a $LOG_FILE
+echo -e "Starting Step 4: filtering the aligned bam files" | tee -a $LOG_FILE
+echo -e "--------------------\n" | tee -a $LOG_FILE
+
+export -f filterfun
+ls *.bam |parallel --progress -j $SAMPLE_NO  filterfun {} $WORKING_DIR $NPROC_PER_SAMPLE | tee -a $LOG_ERR_FILE 
 
 
-cd $homeDir$step5
-ls *.bam |while read data; do samtools index "$data"  & done
+cd $WORKING_DIR
+ls *.bam | parallel --progress -j $SAMPLE_NO samtools index {} 
+                    1>>$LOG_ERR_FILE 2>>$LOG_FILE
 
 prefix=".txt"		
 ls *.bam |while read data; do samtools flagstat "$data" > "$data"${prefix}  & done
 
-#6.  Mapped read QC
-mkdir $homeDir$step6
-cd $homeDir$step5
+#------------------------------------------------------------
+#4.1. QC the mapping 
+#------------------------------------------------------------
+STEP='a_qulimap'
+WORKING_DIR=$WORKING_DIR'/'$STEP; mkdir $WORKING_DIR;
+
 qualmapfun (){
     int1=1;int2=3;
     while read data; do
         nameStr=$(echo "$data"| cut -f1 -d".")
-        mkdir $homeDir$step6$nameStr
+        mkdir $WORKING_DIR'/'$nameStr
         
         if [ `echo $int1" % 2" | bc` -eq 0 ]
         then
+            echo -e "caculating $int1/$SAMPLE_NO samples \n"
             int1=$((int1+int2))
-            JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $homeDir$step6$nameStr --java-mem-size=4G            
+            JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $WORKING_DIR$nameStr --java-mem-size=4G            
         else
+            echo -e "caculating $int1/$SAMPLE_NO samples \n"
             int1=$((int1+int2))
-            JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $homeDir$step6$nameStr --java-mem-size=4G &
+            JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $WORKING_DIR$nameStr --java-mem-size=4G &
         fi
     done
 }
 
-#test if
 
 
-    
+qualmapfun2 (){
+    data=$1
+    nameStr=$(echo "$data"| cut -f1 -d".")
+    homeDir=WORKING_DIR
+    mkdir $homeDir$nameStr
+    JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $homeDir$nameStr --java-mem-size=4G            
+}
 
-ls *.bam | qualmapfun
-#${prefix}"${data:9:10}"
+echo -e "--------------------\n" | tee -a $LOG_FILE
+echo -e "Starting Step 4.1: qualimap QC the mapping" | tee -a $LOG_FILE
+echo -e "--------------------\n" | tee -a $LOG_FILE
 
+ls *.bam | qualmapfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE
+wait;echo -e "Step 4.1 Finshed!" | tee -a $LOG_FILE
 
+#------------------------------------------------------------
+#5.  generate counts 
+#------------------------------------------------------------
+STEP='05counts'
+WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir $WORKING_DIR;
 
+echo -e "--------------------\n" | tee -a $LOG_FILE
+echo -e "(`date`)Starting Step 5: generate the counts file " | tee -a $LOG_FILE
+echo -e "--------------------\n" | tee -a $LOG_FILE
 
-#7.  Counting
-mkdir $homeDir$step7
-cd $homeDir$step5 #filtered 
-featureCounts -T 44 -s 2 -t exon -g gene_id -a /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -o ../07count/counts.txt *.bam &
+featureCounts -T $TOTAL_PROC_NO -s 2 -t exon -g gene_id -a /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -o $WORKING_DIR/counts-gene.txt *.bam | tee -a $LOG_FILE
+#1>>$LOG_ERR_FILE 2>>$LOG_FILE
+wait;echo -e "(`date`) Step 5 Finshed!" | tee -a $LOG_FILE
 
-# 8. Tracks
-cd $homeDir$step5
-mkdir $homeDir$step8
+#------------------------------------------------------------
+# 6. Tracks
+#------------------------------------------------------------
+STEP='06tacks'
+WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir $WORKING_DIR;
+
+echo -e "--------------------\n" | tee -a $LOG_FILE
+echo -e "(`date`)Starting Step 6: make tracks " | tee -a $LOG_FILE
+echo -e "--------------------\n" | tee -a $LOG_FILE
 trackfun (){
     while read data; do
         nameStr=$(echo "$data"| cut -f1 -d".")
