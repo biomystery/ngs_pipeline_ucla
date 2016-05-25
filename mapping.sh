@@ -1,5 +1,5 @@
 #!/bin/bash
-# The Script for mapping
+# Thee Script for mapping
 echo -e "############################################################"
 echo -e "(`date`) initating input parameters ....."
 echo -e "############################################################"
@@ -23,8 +23,8 @@ echo -e "There are $SAMPLE_NO samples in the folder ($FASTQ_DIR) \n" | tee -a $L
 #read NPROC_PER_SAMPLE
 NPROC_PER_SAMPLE=2
 echo -e " $NPROC_PER_SAMPLE process per sample \n" | tee -a $LOG_FILE
-let TOTAL_PROC_NO=$SAMPLE_NO*$NPROC_PER_SAMPLE # calculate number of total processor for the user
-
+#let TOTAL_PROC_NO=$SAMPLE_NO*$NPROC_PER_SAMPLE # calculate number of total processor for the user
+TOTAL_PROC_NO=$((SAMPLE_NO*NPROC_PER_SAMPLE)) # calculate number of total processor for the user
 
 echo -e "############################################################"
 echo -e "`date` Running the pipelines \n" 
@@ -226,3 +226,4 @@ ls *.bam | trackfun | tee -a $LOG_FILE
 
 
 
+# ls -1 *.txt | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee -a $LOG_FILE
