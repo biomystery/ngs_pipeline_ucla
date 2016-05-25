@@ -74,26 +74,26 @@ cd $WORKING_DIR
 #------------------------------------------------------------
 # 3.1 compress the trimed fastqc
 WORKING_DIR=$PARENT_DIR'/03alignment'; mkdir -p $WORKING_DIR;
-echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "(`date`) Starting Step 3, total xx steps:\n" | tee -a $LOG_FILE
-echo -e "(`date`) Starting Step 3.1: alignment\n" | tee -a $LOG_FILE
-echo -e "--------------------\n" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
+#echo -e "(`date`) Starting Step 3, total xx steps:\n" | tee -a $LOG_FILE
+#echo -e "(`date`) Starting Step 3.1: alignment\n" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
 
 # --readFilesCommand gunzip -c \
-ls -1 *.gz | xargs -n1 -P $SAMPLE_NO -i \
-                      STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.50bp \
-                      --runThreadN $NPROC_PER_SAMPLE --readFilesIn {} \
-                      --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate \
-                      --limitBAMsortRAM 17179869184 --outFilterType BySJout\
-                      --outFilterMultimapNmax 20 --alignSJoverhangMin 8\
-                      --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999\
-                      --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20\
-                      --alignIntronMax 1000000 --seedSearchStartLmax 30\
-                      --outFileNamePrefix $WORKING_DIR'/'{}\
-                      --genomeLoad LoadAndKeep \
-                      --readFilesCommand gunzip -c \
-                      | tee -a $LOG_FILE
-wait;echo -e "`date`: Step 3.1 Finshed!" | tee -a $LOG_FILE
+#ls -1 *.gz | xargs -n1 -P $SAMPLE_NO -i \
+#                      STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.50bp \
+#                      --runThreadN $NPROC_PER_SAMPLE --readFilesIn {} \
+#                      --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate \
+#                      --limitBAMsortRAM 17179869184 --outFilterType BySJout\
+#                      --outFilterMultimapNmax 20 --alignSJoverhangMin 8\
+#                      --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999\
+#                      --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20\
+#                      --alignIntronMax 1000000 --seedSearchStartLmax 30\
+#                      --outFileNamePrefix $WORKING_DIR'/'{}\
+#                      --genomeLoad LoadAndKeep \
+#                      --readFilesCommand gunzip -c \
+#                      | tee -a $LOG_FILE
+#wait;echo -e "`date`: Step 3.1 Finshed!" | tee -a $LOG_FILE
 
 
 
@@ -105,13 +105,13 @@ wait;echo -e "`date`: Step 3.1 Finshed!" | tee -a $LOG_FILE
 # 3.1. index the bam file 
 #------------------------------------------------------------
 cd $WORKING_DIR
-echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "(`date`) Starting Step 3.3: index sam file" | tee -a $LOG_FILE
-echo -e "--------------------\n" | tee -a $LOG_FILE
-ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
-                    samtools index {} \
-                    1>>$LOG_ERR_FILE 2>>$LOG_FILE
-wait;echo -e "(`date`) Step 3.3 Finshed!" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
+#echo -e "(`date`) Starting Step 3.3: index sam file" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
+#ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
+#                    samtools index {} \
+#                    1>>$LOG_ERR_FILE 2>>$LOG_FILE
+#wait;echo -e "(`date`) Step 3.3 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 #4.  Filtering (multiple maping reads)
@@ -137,7 +137,7 @@ echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "(`date`) Starting Step 4: filtering the aligned bam files" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
-export -f filterfun
+export  filterfun
 ls *.bam |parallel --progress -j $SAMPLE_NO  filterfun {} $WORKING_DIR $NPROC_PER_SAMPLE | tee -a $LOG_ERR_FILE 
 
 
