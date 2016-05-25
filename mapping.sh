@@ -53,7 +53,7 @@ echo -e "(`date`) Starting Step 2: trimming\n" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 ls -1 *.fastq | xargs -n1 -P $TOTAL_PROC_NO -i \
                       cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  {} \
-                      -o $WORKING_DIR{}".trim.fastq" \
+                      -o $WORKING_DIR"/"{}".trim.fastq" \
                       1>>$LOG_ERR_FILE 2>> $LOG_FILE        
 wait;echo -e "(`date`) Step 2 Finshed!"| tee -a $LOG_FILE
 
