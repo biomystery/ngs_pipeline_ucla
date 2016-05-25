@@ -33,7 +33,7 @@ echo -e "############################################################"
 #------------------------------------------------------------
 #  1 QC of the sequencing reads
 #------------------------------------------------------------
-#WORKING_DIR=$FASTQ_DIR'/fastqc';mkdir $WORKING_DIR
+#WORKING_DIR=$FASTQ_DIR'/fastqc';mkdir -p $WORKING_DIR
 
 #echo -e "--------------------\n" | tee -a $LOG_FILE
 #echo -e "Starting Step 1.1: QC of consolidated FASTQ files" | tee -a $LOG_FILE
@@ -46,8 +46,8 @@ echo -e "############################################################"
 #------------------------------------------------------------
 # 2. FASTQ trimming
 #------------------------------------------------------------
-#WORKING_DIR=$PARENT_DIR'/02trim'; mkdir $WORKING_DIR;
-
+WORKING_DIR=$PARENT_DIR'/02trim'
+#mkdir -p $WORKING_DIR
 #echo -e "--------------------\n" | tee -a $LOG_FILE
 #echo -e "(`date`) Starting Step 2: trimming\n" | tee -a $LOG_FILE
 #echo -e "--------------------\n" | tee -a $LOG_FILE
@@ -62,7 +62,8 @@ echo -e "############################################################"
 #echo -e "(`date`) Starting Step 2.1: QC of trimed QC files" | tee -a $LOG_FILE
 #echo -e "--------------------\n" | tee -a $LOG_FILE
 
-#cd $WORKING_DIR;WORKING_DIR=$WORKING_DIR'/fastqc';mkdir $WORKING_DIR
+cd $WORKING_DIR
+#WORKING_DIR=$WORKING_DIR'/fastqc';mkdir -p $WORKING_DIR
 #ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
 #                      fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
 #                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
@@ -72,7 +73,7 @@ echo -e "############################################################"
 #3. Mapping/alignment. 
 #------------------------------------------------------------
 # 3.1 compress the trimed fastqc
-WORKING_DIR=$PARENT_DIR'/03alignment'; mkdir $WORKING_DIR;
+WORKING_DIR=$PARENT_DIR'/03alignment'; mkdir -p $WORKING_DIR;
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "(`date`) Starting Step 3, total xx steps:\n" | tee -a $LOG_FILE
 echo -e "(`date`) Starting Step 3.1: alignment\n" | tee -a $LOG_FILE
@@ -119,7 +120,7 @@ wait;echo -e "(`date`) Step 3.3 Finshed!" | tee -a $LOG_FILE
 #4.  Filtering (multiple maping reads)
 #------------------------------------------------------------
 STEP='04filter'
-WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir $WORKING_DIR;
+WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir -p $WORKING_DIR;
 
 
 filterfun (){
@@ -154,13 +155,13 @@ ls *.bam |while read data; do samtools flagstat "$data" > "$data"${prefix}  & do
 #4.1. QC the mapping 
 #------------------------------------------------------------
 STEP='a_qulimap'
-WORKING_DIR=$WORKING_DIR'/'$STEP; mkdir $WORKING_DIR;
+WORKING_DIR=$WORKING_DIR'/'$STEP; mkdir -p $WORKING_DIR;
 
 qualmapfun (){
     int1=1;int2=3;
     while read data; do
         nameStr=$(echo "$data"| cut -f1 -d".")
-        mkdir $WORKING_DIR'/'$nameStr
+        mkdir -p $WORKING_DIR'/'$nameStr
         
         if [ `echo $int1" % 2" | bc` -eq 0 ]
         then
@@ -181,7 +182,7 @@ qualmapfun2 (){
     data=$1
     nameStr=$(echo "$data"| cut -f1 -d".")
     homeDir=WORKING_DIR
-    mkdir $homeDir$nameStr
+    mkdir -p $homeDir$nameStr
     JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $homeDir$nameStr --java-mem-size=4G            
 }
 
@@ -197,7 +198,7 @@ wait;echo -e "(`date`) Step 4.1 Finshed!" | tee -a $LOG_FILE
 #5.  generate counts 
 #------------------------------------------------------------
 STEP='05counts'
-WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir $WORKING_DIR;
+WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir -p $WORKING_DIR;
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "(`date`)Starting Step 5: generate the counts file " | tee -a $LOG_FILE
@@ -211,7 +212,7 @@ wait;echo -e "(`date`) Step 5 Finshed!" | tee -a $LOG_FILE
 # 6. Tracks
 #------------------------------------------------------------
 STEP='06tacks'
-WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir $WORKING_DIR;
+WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir -p $WORKING_DIR;
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "(`date`)Starting Step 6: make tracks " | tee -a $LOG_FILE
