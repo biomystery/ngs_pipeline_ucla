@@ -126,11 +126,11 @@ filterfun (){
     data=$1
     #WORKING_DIR=$2; NPROC_PER_SAMPLE=$3
      nameStr=$(echo "$data"| cut -f1 -d".")
-     #echo $nameStr
-     #echo $data
-     #echo $WORKING_DIR'/'$nameStr$prefix$filetype
-     #echo $NPROC_PER_SAMPLE
-     eval "samtools view -b -F 2820 -q 30 -@ $NPROC_PER_SAMPLE $data > $WORKING_DIR/$nameStr$prefix$filetype"
+     echo $nameStr
+     echo $data
+     echo $WORKING_DIR'/'$nameStr$prefix$filetype
+     echo $NPROC_PER_SAMPLE
+     #eval "samtools view -b -F 2820 -q 30 -@ $NPROC_PER_SAMPLE $data > $WORKING_DIR/$nameStr$prefix$filetype"
 }
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
