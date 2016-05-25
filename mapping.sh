@@ -46,27 +46,27 @@ echo -e "############################################################"
 #------------------------------------------------------------
 # 2. FASTQ trimming
 #------------------------------------------------------------
-WORKING_DIR=$PARENT_DIR'/02trim'; mkdir $WORKING_DIR;
+#WORKING_DIR=$PARENT_DIR'/02trim'; mkdir $WORKING_DIR;
 
-echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "(`date`) Starting Step 2: trimming\n" | tee -a $LOG_FILE
-echo -e "--------------------\n" | tee -a $LOG_FILE
-ls -1 *.fastq | xargs -n1 -P $TOTAL_PROC_NO -i \
-                      cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  {} \
-                      -o $WORKING_DIR"/"{}".trim.fastq" \
-                      1>>$LOG_ERR_FILE 2>> $LOG_FILE        
-wait;echo -e "(`date`) Step 2 Finshed!"| tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
+#echo -e "(`date`) Starting Step 2: trimming\n" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
+#ls -1 *.fastq | xargs -n1 -P $TOTAL_PROC_NO -i \
+#                      cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  {} \
+#                      -o $WORKING_DIR"/"{}".trim.fastq" \
+#                      1>>$LOG_ERR_FILE 2>> $LOG_FILE        
+#wait;echo -e "(`date`) Step 2 Finshed!"| tee -a $LOG_FILE
 
 # 1.1 qc of trimed fastqc
-echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "(`date`) Starting Step 2.1: QC of trimed QC files" | tee -a $LOG_FILE
-echo -e "--------------------\n" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
+#echo -e "(`date`) Starting Step 2.1: QC of trimed QC files" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
 
-cd $WORKING_DIR;WORKING_DIR=$WORKING_DIR'/fastqc';mkdir $WORKING_DIR
-ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
-                      fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
-                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
-wait;echo -e "(`date`)Step 2.1 Finshed!" | tee -a $LOG_FILE
+#cd $WORKING_DIR;WORKING_DIR=$WORKING_DIR'/fastqc';mkdir $WORKING_DIR
+#ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
+#                      fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
+#                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
+#wait;echo -e "(`date`)Step 2.1 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 #3. Mapping/alignment. 
@@ -90,16 +90,17 @@ ls -1 *.gz | xargs -n1 -P $SAMPLE_NO -i \
                       --alignIntronMax 1000000 --seedSearchStartLmax 30\
                       --outFileNamePrefix $WORKING_DIR'/'{}\
                       --genomeLoad LoadAndKeep \
+                      --readFilesCommand gunzip -c \
                       1>>$LOG_FILE 2>>$LOG_ERR_FILE 
 wait;echo -e "`date`: Step 3.1 Finshed!" | tee -a $LOG_FILE
 
 # 3.2 compress the trimed fastqc
-echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "(`date`)Starting Step 3.2: compress the trimed QC files" | tee -a $LOG_FILE
-echo -e "--------------------\n" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
+#echo -e "(`date`)Starting Step 3.2: compress the trimed QC files" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
 
-ls -1 *.fastq | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee -a $LOG_FILE
-wait;echo -e "(`date`) Step 3.2 Finshed!" | tee -a $LOG_FILE
+#ls -1 *.fastq | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee -a $LOG_FILE
+#wait;echo -e "(`date`) Step 3.2 Finshed!" | tee -a $LOG_FILE
 
 
 #------------------------------------------------------------
