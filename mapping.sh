@@ -124,7 +124,7 @@ filterfun (){
     prefix=".filtered"
     filetype='.bam'
     data=$1
-    #WORKING_DIR=$2; NPROC_PER_SAMPLE=$3
+    WORKING_DIR=$2; NPROC_PER_SAMPLE=$3
      nameStr=$(echo "$data"| cut -f1 -d".")
      echo $nameStr
      echo $data
@@ -138,12 +138,11 @@ echo -e "(`date`) Starting Step 4: filtering the aligned bam files" | tee -a $LO
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
 echo $PWD
-export -f filterfun
-ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
-                      filterfun {}  \
-                      | tee -a $LOG_FILE
+#ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
+#                      filterfun {}  \
+#                      | tee -a $LOG_FILE
 
-#ls *.bam |parallel --progress -j $SAMPLE_NO  filterfun {} $WORKING_DIR $NPROC_PER_SAMPLE | tee -a $LOG_ERR_FILE 
+ls *.bam |env_parallel --progress -j $SAMPLE_NO  filterfun {} $WORKING_DIR $NPROC_PER_SAMPLE | tee -a $LOG_ERR_FILE 
 echo -e "(`date`)  Step 4 finished" | tee -a $LOG_FILE
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
