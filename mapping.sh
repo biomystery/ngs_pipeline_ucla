@@ -92,15 +92,12 @@ ls -1 *.gz | xargs -n1 -P $SAMPLE_NO -i \
                       --outFileNamePrefix $WORKING_DIR'/'{}\
                       --genomeLoad LoadAndKeep \
                       --readFilesCommand gunzip -c \
-                      1>>$LOG_FILE 2>>$LOG_ERR_FILE 
+                      | tee -a $LOG_FILE
 wait;echo -e "`date`: Step 3.1 Finshed!" | tee -a $LOG_FILE
 
-# 3.2 compress the trimed fastqc
-#echo -e "--------------------\n" | tee -a $LOG_FILE
-#echo -e "(`date`)Starting Step 3.2: compress the trimed QC files" | tee -a $LOG_FILE
-#echo -e "--------------------\n" | tee -a $LOG_FILE
 
-#ls -1 *.fastq | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee -a $LOG_FILE
+
+
 #wait;echo -e "(`date`) Step 3.2 Finshed!" | tee -a $LOG_FILE
 
 
@@ -224,8 +221,18 @@ trackfun (){
     done
 }
 ls *.bam | trackfun | tee -a $LOG_FILE
+wait;echo -e "(`date`) Step 6 Finshed!" | tee -a $LOG_FILE
 
+#------------------------------------------------------------
+# 7. compress all the fastq files 
+#------------------------------------------------------------
+echo -e "--------------------\n" | tee -a $LOG_FILE
+echo -e "(`date`)Starting Step 7: compress all fastq files" | tee -a $LOG_FILE
+echo -e "--------------------\n" | tee -a $LOG_FILE
 
+cd $PARENT_DIR
+find . -type f -name "*.fastq" | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee -a $LOG_FILE
+wait;echo -e "(`date`) Step 7 Finshed!" | tee -a $LOG_FILE
 
 
 # ls -1 *.txt | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee -a $LOG_FILE
