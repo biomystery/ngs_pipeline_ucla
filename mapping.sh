@@ -143,7 +143,11 @@ ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
                       1>>$LOG_FILE 2>>$LOG_ERR_FILE
 
 #ls *.bam |parallel --progress -j $SAMPLE_NO  filterfun {} $WORKING_DIR $NPROC_PER_SAMPLE | tee -a $LOG_ERR_FILE 
+echo -e "(`date`)  Step 4 finished" | tee -a $LOG_FILE
 
+echo -e "--------------------\n" | tee -a $LOG_FILE
+echo -e "(`date`) Starting Step 4.a: indexing the filtered bam" | tee -a $LOG_FILE
+echo -e "--------------------\n" | tee -a $LOG_FILE
 
 cd $WORKING_DIR
 ls *.bam | parallel --progress -j $SAMPLE_NO samtools index {} 
@@ -151,6 +155,7 @@ ls *.bam | parallel --progress -j $SAMPLE_NO samtools index {}
 
 prefix=".txt"		
 ls *.bam |while read data; do samtools flagstat "$data" > "$data"${prefix}  & done
+echo -e "(`date`)  finished Step 4.a: indexing the filtered bam" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 #4.1. QC the mapping 
