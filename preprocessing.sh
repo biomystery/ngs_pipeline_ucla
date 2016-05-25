@@ -28,19 +28,21 @@ fi
 
 # define paths & steps here 
 
-WORK_DIR="/home/frank/kim/2000/"
-STEP0_DIR="00raw/"
+MAIN_DIR=$PWD
+STEP0="00raw"
 barcodefile=./barcode.txt
 
 ############################################################
 # 1. Download & convert
 ############################################################
-mkdir cd $WORK_DIR$STEP0_DIR; cd $WORK_DIR$STEP0_DIR
+WORK_DIR=$MAIN_DIR"/"$STEP0
+mkdir $WORK_DIR; cd $WORK_DIR
+
 grab_bscrc.sh SxaQSEQsWA148L3:wa4kD9Ye8hr8 # why freeze here
 cd SxaQSEQsWA148L3
 ls -1 *.gz | parallel -j 60 --eta gunzip
 
-diff <(ls -1 *_1_*.txt | while read data; do echo ${data:6:4}; done) <(ls -1 *_2_*.txt | while read data; do echo ${data:6:4}; done)
+#diff <(ls -1 *_1_*.txt | while read data; do echo ${data:6:4}; done) <(ls -1 *_2_*.txt | while read data; do echo ${data:6:4}; done)
 
 
 ############################################################
