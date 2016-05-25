@@ -33,15 +33,15 @@ echo -e "############################################################"
 #------------------------------------------------------------
 #  1 QC of the sequencing reads
 #------------------------------------------------------------
-WORKING_DIR=$FASTQ_DIR'/fastqc';mkdir $WORKING_DIR
+#WORKING_DIR=$FASTQ_DIR'/fastqc';mkdir $WORKING_DIR
 
-echo -e "--------------------\n" | tee -a $LOG_FILE
-echo -e "Starting Step 1.1: QC of consolidated FASTQ files" | tee -a $LOG_FILE
-echo -e "--------------------\n" | tee -a $LOG_FILE
-ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
-                      fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
-                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
-echo -e "(`date`) Step 1.1 Finshed!" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
+#echo -e "Starting Step 1.1: QC of consolidated FASTQ files" | tee -a $LOG_FILE
+#echo -e "--------------------\n" | tee -a $LOG_FILE
+#ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
+#                      fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
+#                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
+#echo -e "(`date`) Step 1.1 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
 # 2. FASTQ trimming
@@ -51,7 +51,7 @@ WORKING_DIR=$PARENT_DIR'/02trim'; mkdir $WORKING_DIR;
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "(`date`) Starting Step 2: trimming\n" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
-ls -1 *.fastq | xargs -n1 -P $PROCESSORS_NO -i \
+ls -1 *.fastq | xargs -n1 -P $TOTAL_PROC_NO -i \
                       cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  {} \
                       -o $WORKING_DIR{}".trim.fastq" \
                       1>>$LOG_ERR_FILE 2>> $LOG_FILE        
