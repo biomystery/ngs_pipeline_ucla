@@ -137,6 +137,7 @@ echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "(`date`) Starting Step 4: filtering the aligned bam files" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
+echo $PWD
 ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
                       filterfun {}  \
                       1>>$LOG_FILE 2>>$LOG_ERR_FILE
