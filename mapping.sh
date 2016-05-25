@@ -165,11 +165,11 @@ qualmapfun (){
         then
             echo -e "caculating $int1/$SAMPLE_NO samples \n"
             int1=$((int1+int2))
-            JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $WORKING_DIR$nameStr --java-mem-size=4G            
+            JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $WORKING_DIR/$nameStr --java-mem-size=4G            
         else
             echo -e "caculating $int1/$SAMPLE_NO samples \n"
             int1=$((int1+int2))
-            JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $WORKING_DIR$nameStr --java-mem-size=4G &
+            JAVA_OPTS="-Djava.awt.headless=true" qualimap rnaseq -bam "$data" -gtf /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -p strand-specific-reverse -outdir $WORKING_DIR/$nameStr --java-mem-size=4G &
         fi
     done
 }
@@ -188,7 +188,8 @@ echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e " (`date`) Starting Step 4.1: qualimap QC the mapping" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
-ls *.bam | qualmapfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE
+ls *.bam | qualmapfun | tee -a $LOG_FILE
+#1>>$LOG_ERR_FILE 2>>$LOG_FILE
 wait;echo -e "(`date`) Step 4.1 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
@@ -217,10 +218,10 @@ echo -e "--------------------\n" | tee -a $LOG_FILE
 trackfun (){
     while read data; do
         nameStr=$(echo "$data"| cut -f1 -d".")
-        bam2wig.py -i "$data" -s /opt/ngs_indexes/genomes/mm/mm10.chrom.sizes -o track.bw -t 500000000 -d '+-,-+' -o $homeDir$step8$nameStr & 
+        bam2wig.py -i "$data" -s /opt/ngs_indexes/genomes/mm/mm10.chrom.sizes -o track.bw -t 500000000 -d '+-,-+' -o $WORKING_DIR$nameStr & 
     done
 }
-ls *.bam | trackfun
+ls *.bam | trackfun | tee -a $LOG_FILE
 
 
 
