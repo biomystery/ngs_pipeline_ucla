@@ -130,7 +130,7 @@ filterfun (){
      #echo $data
      #echo $WORKING_DIR'/'$nameStr$prefix$filetype
      #echo $NPROC_PER_SAMPLE
-     samtools view -b -F 2820 -q 30 -@ $NPROC_PER_SAMPLE $data > $WORKING_DIR/$nameStr$prefix$filetype
+     eval "samtools view -b -F 2820 -q 30 -@ $NPROC_PER_SAMPLE $data > $WORKING_DIR/$nameStr$prefix$filetype"
 }
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
