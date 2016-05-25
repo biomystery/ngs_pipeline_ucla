@@ -124,21 +124,24 @@ filterfun (){
     prefix=".filtered"
     filetype='.bam'
     data=$1
-    WORKING_DIR=$2; NPROC_PER_SAMPLE=$3
+    #WORKING_DIR=$2; NPROC_PER_SAMPLE=$3
      nameStr=$(echo "$data"| cut -f1 -d".")
      #echo $nameStr
      #echo $data
      #echo $WORKING_DIR'/'$nameStr$prefix$filetype
      #echo $NPROC_PER_SAMPLE
-     eval "samtools view -b -F 2820 -q 30 -@ $NPROC_PER_SAMPLE $data > $WORKING_DIR/$nameStr$prefix$filetype"
+     samtools view -b -F 2820 -q 30 -@ $NPROC_PER_SAMPLE $data > $WORKING_DIR/$nameStr$prefix$filetype
 }
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "(`date`) Starting Step 4: filtering the aligned bam files" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
-export  filterfun
-ls *.bam |parallel --progress -j $SAMPLE_NO  filterfun {} $WORKING_DIR $NPROC_PER_SAMPLE | tee -a $LOG_ERR_FILE 
+ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
+                      filterfun {}  \
+                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
+
+#ls *.bam |parallel --progress -j $SAMPLE_NO  filterfun {} $WORKING_DIR $NPROC_PER_SAMPLE | tee -a $LOG_ERR_FILE 
 
 
 cd $WORKING_DIR
