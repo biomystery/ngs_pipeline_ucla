@@ -168,7 +168,7 @@ echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e " (`date`) Starting Step 4.3: qualimap QC the mapping" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
-ls *.bam | qualmapfun | tee -a $LOG_FILE
+ls *.bam | qualmapfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE
 wait;echo -e "(`date`) Step 4.3 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
