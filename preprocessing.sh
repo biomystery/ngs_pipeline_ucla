@@ -17,7 +17,7 @@ BARCODE_FILE=$PARENT_DIR/barcode.txt
 echo -e "(`date`) barcode file is $BARCODE_FILE \n"
 
 # samples 
-SAMPLE_NO=`wc -l $BARCODE_FILE` 
+SAMPLE_NO=`wc -l < $BARCODE_FILE` 
 echo -e "There are $SAMPLE_NO samples in this experiment \n" | tee -a $LOG_FILE
 
 #number  of processors per sample for fastqc 
