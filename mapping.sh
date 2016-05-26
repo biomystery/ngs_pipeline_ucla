@@ -91,7 +91,8 @@ ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
                       --alignIntronMax 1000000 --seedSearchStartLmax 30\
                       --outFileNamePrefix $WORKING_DIR'/'{}\
                       --genomeLoad LoadAndKeep \
-                      | tee -a $LOG_FILE
+                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
+#| tee -a $LOG_FILE
 wait;echo -e "`date`: Step 3.1 Finshed!" | tee -a $LOG_FILE
 
 #------------------------------------------------------------
