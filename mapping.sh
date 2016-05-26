@@ -22,7 +22,7 @@ echo -e "There are $SAMPLE_NO samples in the folder ($FASTQ_DIR) \n" | tee -a $L
 #echo -e " Enter the number of processor per sample \n" 
 #read NPROC_PER_SAMPLE
 NPROC_PER_SAMPLE=2
-echo -e " $NPROC_PER_SAMPLE process per sample \n" | tee -a $LOG_FILE
+echo -e " $NPROC_PER_SAMPLE processors per sample \n" | tee -a $LOG_FILE
 #let TOTAL_PROC_NO=$SAMPLE_NO*$NPROC_PER_SAMPLE # calculate number of total processor for the user
 TOTAL_PROC_NO=$((SAMPLE_NO*NPROC_PER_SAMPLE)) # calculate number of total processor for the user
 
@@ -80,7 +80,7 @@ echo -e "(`date`) Starting Step 3.1: alignment\n" | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
 # --readFilesCommand gunzip -c \
-ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
+ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
                       STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.50bp \
                       --runThreadN $NPROC_PER_SAMPLE --readFilesIn {} \
                       --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate \
