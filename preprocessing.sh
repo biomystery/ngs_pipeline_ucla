@@ -128,6 +128,12 @@ while read line; do
 done<$BARCODE_FILE | tee -a $LOG_FILE
 wait;echo -e "(`date`) 0.5 demultiplex finished" | tee -a $LOG_FILE
 
+echo -e "############################################################"| tee -a $LOG_FILE
+echo -e "0.6 `date` remove unmatched fastq " | tee -a $LOG_FILE
+echo -e "############################################################"| tee -a $LOG_FILE
+
+ls -lght >> $LOG_FILE
+rm unmatched* 
 
 #------------------------------------------------------------
 # 5. remove tmp files & mv files to the server 
