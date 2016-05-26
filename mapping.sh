@@ -181,7 +181,7 @@ echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "(`date`)Starting Step 5: generate the counts file " | tee -a $LOG_FILE
 echo -e "--------------------\n" | tee -a $LOG_FILE
 
-featureCounts -T $TOTAL_PROC_NO -s 2 -t exon -g gene_id -a /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -o $WORKING_DIR/counts-gene.txt *.bam | tee -a $LOG_FILE
+featureCounts -T $TOTAL_PROC_NO -s 2 -t exon -g gene_id -a /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.annotation.gtf -o $WORKING_DIR/counts-gene.txt *.bam 1>>$LOG_ERR_FILE 2>>$LOG_FILE
 
 wait;echo -e "(`date`) Step 5 Finshed!" | tee -a $LOG_FILE
 
@@ -200,7 +200,7 @@ trackfun (){
         bam2wig.py -i "$data" -s /opt/ngs_indexes/genomes/mm/mm10.chrom.sizes -t 500000000 -d '+-,-+' -o $WORKING_DIR/$nameStr".bw" & 
     done
 }
-ls *.bam | trackfun | tee -a $LOG_FILE
+ls *.bam | trackfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE
 
 echo -e "--------------------\n" | tee -a $LOG_FILE
 echo -e "(`date`)finished tracks & now deleting wig files " | tee -a $LOG_FILE
@@ -221,3 +221,6 @@ find . -type f -name "*.fastq" | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee 
 wait;echo -e "(`date`) Step 7 Finshed!" | tee -a $LOG_FILE
 
 
+echo -e "--------------------\n" | tee -a $LOG_FILE
+echo -e "(`date`) Congratuations! U finished the pipeline in total " | tee -a $LOG_FILE
+echo -e "--------------------\n" | tee -a $LOG_FILE

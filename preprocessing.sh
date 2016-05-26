@@ -1,93 +1,77 @@
 #!/bin/bash
+echo -e "############################################################"
+echo -e "(`date`) initating input parameters ....."
+echo -e "############################################################"
 
-#------------------------------------------------------------
-# use read function to take input 
-#------------------------------------------------------------
-echo "Please input the password info (example: )\n"
+#input 1: consolidated FASTQ Folder 
+
+PARENT_DIR=$PWD #  project dir
+# log files
+LOG_FILE=$PARENT_DIR"/run.log.txt"; LOG_ERR_FILE=$PARENT_DIR"/run.err.txt"
+echo -e "(`date`)Setting folder \n" | tee -a $LOG_FILE
+echo -e "(`date`) project folder is $PARENT_DIR \n" | tee -a $LOG_FILE
+echo -e "(`date`) log files are $LOG_ERR_FILE and $LOG_FILE \n" | tee -a $LOG_FILE
+
+# barcode files
+BARCODE_FILE=$PARENT_DIR/barcode.txt
+echo -e "(`date`) barcode file is $BARCODE_FILE \n"
+
+# samples 
+SAMPLE_NO=`wc -l $BARCODE_FILE` 
+echo -e "There are $SAMPLE_NO samples in this experiment \n" | tee -a $LOG_FILE
+
+#number  of processors per sample for fastqc 
+NPROC_PER_SAMPLE=2
+echo -e " $NPROC_PER_SAMPLE processors per sample \n" | tee -a $LOG_FILE
+TOTAL_PROC_NO=$((SAMPLE_NO*NPROC_PER_SAMPLE)) # calculate number of total processor for the user
+echo -e " total: $TOTAL_PROC_NO processors will be using for this analysis \n" | tee -a $LOG_FILE
+
+echo -e "Please input the password info (example: )\n" | tee -a $LOG_FILE
+PASSWD_INFO_INPUT="SxaQSEQsWA148L3:wa4kD9Ye8hr8"
 
 
-#------------------------------------------------------------
-# input parameters, check
-#------------------------------------------------------------
+echo -e "############################################################"| tee -a $LOG_FILE
+echo -e "`date` Running the pipelines " | tee -a $LOG_FILE
+echo -e "############################################################"| tee -a $LOG_FILE
 
 
-E_WRONG_ARGS=85
-script_parameters="-w -p -m -z"
-# -w = working directory
-# -p = password inf 
+echo -e "############################################################"| tee -a $LOG_FILE
+echo -e "0.1 `date` starting downloading" | tee -a $LOG_FILE
+echo -e "############################################################"| tee -a $LOG_FILE
 
-
-if [ $# -ne 4 ]
-then
-  echo "Usage: `basename $0` $script_parameters"
-  # `basename $0` is the script's filename.
-  exit $E_WRONG_ARGS
-fi
-
-
-
-# define paths & steps here 
-
-MAIN_DIR=$PWD
-STEP0="00raw"
-barcodefile=./barcode.txt
-
-############################################################
-# 1. Download & convert
-############################################################
-WORK_DIR=$MAIN_DIR"/"$STEP0
+STEP="00raw"; WORK_DIR=$PARENT_DIR"/"$STEP
 mkdir $WORK_DIR; cd $WORK_DIR
 
 grab_bscrc.sh SxaQSEQsWA148L3:wa4kD9Ye8hr8 # why freeze here
-cd SxaQSEQsWA148L3
-ls -1 *.gz | parallel -j 60 --eta gunzip
+wait;echo -e "(`date`) downloaded the raw qseq data" | tee -a $LOG_FILE
 
-#diff <(ls -1 *_1_*.txt | while read data; do echo ${data:6:4}; done) <(ls -1 *_2_*.txt | while read data; do echo ${data:6:4}; done)
+echo -e "############################################################"| tee -a $LOG_FILE
+echo -e "0.2 `date` starting decompressing " | tee -a $LOG_FILE
+echo -e "############################################################"| tee -a $LOG_FILE
 
-
-############################################################
-# 2.  convert qseq txt to fastq 
-############################################################
-
-ls -1 * | while read data; do  echo ${data:0:10}; done
-ls -1 * | while read data; do  qseq2fastq.pl $data ${data:0:10}'.fastq' & done
-
-# method 2, not working currently 
-qseq2fastqfunc (){
-    while read data
-    do
-        qseq2fastq.pl $data ${data:0:10}'.fastq'
-    done
-}
-
-ls -1 *.txt | parallel -j 48 --eta qseq2fastqfunc
+RAW_DIR=$(echo $PASSWD_INFO_INPUT|cut -f1 -d":"); RAW_DIR=$WORK_DIR/$RAW_DIR; cd $RAW_DIR
+ls -1 *.gz | parallel -j $TOTAL_PROC_NO --eta gunzip 
+wait;echo -e "(`date`) decompressed the raw qseq data" | tee -a $LOG_FILE
 
 
-#------------------------------------------------------------
-# 3 Demultiplex FASTQ
-#------------------------------------------------------------
-STEP="02_consolidate"
-echo $STEP
-prefix=$WORK_DIR$STEP'/'
-mkdir $prefix
+echo -e "############################################################"| tee -a $LOG_FILE
+echo -e "0.3 `date` starting converting qseq to fastq " | tee -a $LOG_FILE
+echo -e "############################################################"| tee -a $LOG_FILE
 
-# method 1 / not working currently 
-demultiplexFun (){
-    while read data
-    do
-        suffix=${data:5:11}
-        echo 'processing:'$suffix
-        idxfile=$(echo "$data" |sed -r 's/_1_/_2_/')
-        echo "using idx file: "$idxfile
-        cat $data | fastx_barcode_splitter.pl --bcfile $barcodefile --prefix ../02_consolidated/ --suffix $suffix --idxfile $idxfile --mismatches 1 
-    done
-}
-export -f demultiplexFun
-ls -1 *_1_*.fastq | parallel -j 48 --eta demultiplexFun
+ls -1 * | while read data; do  echo ${data:0:10}; done | tee -a $LOG_FILE
+ls -1 * | while read data; do  qseq2fastq.pl $data ${data:0:10}'.fastq' & done | tee -a $LOG_FILE
+wait;echo -e "(`date`) 0.3 convering finished" | tee -a $LOG_FILE
 
-# method 2 
+echo -e "############################################################"| tee -a $LOG_FILE
+echo -e "0.4 `date` starting demultiplex " | tee -a $LOG_FILE
+echo -e "############################################################"| tee -a $LOG_FILE
+
+STEP="consolidate";
+WORK_DIR=$WORK_DIR'/'$STEP; mkdir $WORK_DIR
+
 demultiplexFunMuticore (){
-    count=1;ncore=60;
+    count=1;ncore=$TOTAL_PROC_NO;
+    prefix=$WORK_DIR"/"
     while read data
     do
         suffix=${data:5:11}
@@ -97,7 +81,7 @@ demultiplexFunMuticore (){
         echo "calulating no.$count sampling ......"
         if [ `echo $count" % "$ncore | bc` -eq 0 ] #mod ncore
         then
-            cat $data | fastx_barcode_splitter.pl --bcfile $barcodefile --prefix $prefix --suffix $suffix --idxfile $idxfile --mismatches 1
+            cat $data | fastx_barcode_splitter.pl --bcfile $BARCODE_FILE --prefix $prefix --suffix $suffix --idxfile $idxfile --mismatches 1
         else
             cat $data | fastx_barcode_splitter.pl --bcfile $barcodefile --prefix $prefix --suffix $suffix --idxfile $idxfile --mismatches 1 &
         fi
@@ -105,34 +89,32 @@ demultiplexFunMuticore (){
     done
 }
 
-ls -1 *_1_*.fastq | demultiplexFunMuticore > demultiplex.log.txt
+ls -1 *_1_*.fastq | demultiplexFunMuticore 1>>$LOG_FILE 2>>$LOG_ERR_FILE
 
-# check if all files demultiplexed
-ls -1 ../../02_consolidate/Wt-TNF-8*.fastq | wc -l ;  ls -1 *_2_*.fastq | wc -l ; 
-diff <(ls -1 ../../02_consolidate/Wt-TNF-8*.fastq |  while read data; do echo ${data: -11}; done) <(ls -1 *_2_*.fastq | while read data; do echo ${data:5:11}; done)
+wait;echo -e "(`date`) 0.4 demultiplex finished" | tee -a $LOG_FILE
 
-# head -c 2 # check the first two characters 
+echo -e "############################################################"| tee -a $LOG_FILE
+echo -e "0.5 `date` merge fastq " | tee -a $LOG_FILE
+echo -e "############################################################"| tee -a $LOG_FILE
 
-# 4. Merge FASTQ
-barcodefile=../00raw/SxaQSEQsWA148L3/barcode.txt
-
-cd ../../02_consolidate/
+cd $WORK_DIR
 while read line; do
     prefix=$(echo -e "$line" | cut -f1 -d$'\t')
     #eval "ls ${prefix}* "
     echo $prefix
     eval "cat ${prefix}* > ${prefix}.fastq && rm ${prefix}_* &"
     #eval "rm ${prefix}_* " 
-done<$barcodefile
+done<$BARCODEFILE | tee -a $LOG_FILE
+wait;echo -e "(`date`) 0.5 demultiplex finished" | tee -a $LOG_FILE
 
-# cat alpha-0_*.fastq >alpha-0.fastq
+
 #------------------------------------------------------------
 # 5. remove tmp files & mv files to the server 
 #------------------------------------------------------------
 # define serverDir
-serverDir="/mnt/biggie/backed_up/frank/projects/dynamic-decoding/caRNA/batch3/2000/"
-rm *.fastq # rm tmp fastq files 
-ls -1 *.txt | parallel -j 48 --eta gzip -9  # gzip txt  raw file
+#serverDir="/mnt/biggie/backed_up/frank/projects/dynamic-decoding/caRNA/batch3/2000/"
+#rm *.fastq # rm tmp fastq files 
+#ls -1 *.txt | parallel -j 48 --eta gzip -9  # gzip txt  raw file
 
 
 
