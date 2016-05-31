@@ -4,7 +4,7 @@ echo -e "(`date`) Welcome to the RNAseq Auto analysis ver 0.0"
 echo -e "############################################################"
 
 
-echo -e "(`date`) initating input parameters ....."
+echo -e "(`date`) Initating input parameters ....."
 echo -e " "
 
 #input 1: consolidated FASTQ Folder 
@@ -12,9 +12,10 @@ PARENT_DIR=$PWD #  project dir
 
 # log files
 LOG_FILE=$PARENT_DIR"/run.log.txt"; LOG_ERR_FILE=$PARENT_DIR"/run.err.txt"
-echo -e "(`date`)Setting folder \n" | tee -a $LOG_FILE
-echo -e "(`date`) project folder is $PARENT_DIR \n" | tee -a $LOG_FILE
-echo -e "(`date`) log files are $LOG_ERR_FILE and $LOG_FILE \n" | tee -a $LOG_FILE
+echo -e "(`date`) Setting folder \n" | tee -a $LOG_FILE
+echo -e "(`date`) Project folder is $PARENT_DIR \n" | tee -a $LOG_FILE
+echo -e "(`date`) Log files are $LOG_ERR_FILE and $LOG_FILE \n" | tee -a $LOG_FILE
+read -p "Press [Enter] key to continue..."
 
 # barcode files
 BARCODE_FILE=$PARENT_DIR/barcode.txt
@@ -23,6 +24,7 @@ echo -e "(`date`) barcode file is $BARCODE_FILE \n"
 # number of samples 
 SAMPLE_NO=`wc -l < $BARCODE_FILE` 
 echo -e "There are $SAMPLE_NO samples in this experiment \n" | tee -a $LOG_FILE
+read -p "Press [Enter] key to continue..."
 
 #number  of processors per sample for fastqc 
 NPROC_PER_SAMPLE=2
@@ -30,15 +32,16 @@ echo -e " $NPROC_PER_SAMPLE processors per sample \n" | tee -a $LOG_FILE
 TOTAL_PROC_NO=$((SAMPLE_NO*NPROC_PER_SAMPLE)) # calculate number of total processor for the user
 echo -e " total: $TOTAL_PROC_NO processors will be using for this analysis \n" | tee -a $LOG_FILE
 
-echo -e "Please input the password info (example: )\n" | tee -a $LOG_FILE
-PASSWD_INFO_INPUT="SxaQSEQsWA148L3:wa4kD9Ye8hr8"
+#echo -e "Please input the password info (example: )\n" | tee -a $LOG_FILE
+echo -e "Check the password file (password.txt)" | tee -a $LOG_FILE
+PASSWD_INFO_INPUT=$(head -n 1 password.txt)
+#PASSWD_INFO_INPUT="SxaQSEQsWA148L3:wa4kD9Ye8hr8"
 echo -e "Your password is : $PASSWD_INFO_INPUT"
+read -p "Press [Enter] key to continue..."
 
 echo -e "############################################################"| tee -a $LOG_FILE
 echo -e "`date` start running the pipelines " | tee -a $LOG_FILE
-
-
-echo -e "1.1 `date` starting downloading" | tee -a $LOG_FILE
+echo -e "`date` 1.1  starting downloading" | tee -a $LOG_FILE
 echo -e "############################################################"| tee -a $LOG_FILE
 
 STEP="00raw"; WORK_DIR=$PARENT_DIR"/"$STEP
