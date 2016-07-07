@@ -68,16 +68,20 @@ echo -e "(`date`) 1.1  starting downloading" | tee -a $LOG_FILE
 echo -e "############################################################"| tee -a $LOG_FILE
 
 STEP="00raw"; WORK_DIR=$PARENT_DIR"/"$STEP
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
 mkdir -p $WORK_DIR; cd $WORK_DIR
-grab_bscrc.sh $PASSWD_INFO_INPUT
+date| tee -a $LOG_FILE_STEP
+grab_bscrc.sh $PASSWD_INFO_INPUT | tee - a $LOG_FILE_STEP
 
-wait;echo -e "(`date`) downloaded the raw qseq data" | tee -a $LOG_FILE
+wait;echo -e "(`date`) downloaded the raw qseq data" | tee -a $LOG_FILE_STEP
 RAW_DIR=$(echo $PASSWD_INFO_INPUT|cut -f1 -d":"); RAW_DIR=$WORK_DIR/$RAW_DIR; cd $RAW_DIR
-echo -e "(`date`) there are total: `ls -1 | wc -l`  raw qseq data" | tee -a $LOG_FILE
+LOG_FILE_STEP=$RAW_DIR"/log.txt"
+echo -e "(`date`) there are total: `ls -1 | wc -l`  raw qseq data" | tee -a $LOG_FILE_STEP
 
 echo -e "############################################################"| tee -a $LOG_FILE
 echo -e "(`date`) 1.2 starting decompressing " | tee -a $LOG_FILE
-ls -1 *.gz | parallel -j $TOTAL_PROC_NO --eta gunzip 
+date| tee -a $LOG_FILE_STEP
+ls -1 *.gz | parallel -j $TOTAL_PROC_NO --eta gunzip |tee -a $LOG_FILE_STEP
 wait;echo -e "(`date`) decompressed the raw qseq data" | tee -a $LOG_FILE
 
 echo -e "############################################################"| tee -a $LOG_FILE
@@ -99,7 +103,8 @@ qseq2fastqPar (){
     done
 }
 
-ls -1 * | qseq2fastqPar | tee -a $LOG_FILE
+date| tee -a $LOG_FILE_STEP
+ls -1 * | qseq2fastqPar | tee -a $LOG_FILE_STEP
 wait;echo -e "(`date`) 1.3 convering finished" | tee -a $LOG_FILE
 
 echo -e "############################################################"| tee -a $LOG_FILE
@@ -108,6 +113,7 @@ echo -e " (`date`) 1.4 starting demultiplex " | tee -a $LOG_FILE
 
 STEP="consolidate";
 WORK_DIR=$WORK_DIR'/'$STEP; mkdir -p $WORK_DIR
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
 
 demultiplexFunMuticore (){
     count=1
@@ -133,7 +139,9 @@ demultiplexFunMuticore (){
     done
 }
 
-ls -1 *_1_*.fastq | demultiplexFunMuticore 1|tee -a $LOG_FILE 2>>$LOG_ERR_FILE
+date | tee -a $LOG_FILE_STEP
+ls -1 *_1_*.fastq | demultiplexFunMuticore 1|tee -a $LOG_FILE_STEP 2>>$LOG_ERR_FILE
+date | tee -a $LOG_FILE_STEP
 
 wait;echo -e "(`date`) 1.4 demultiplex finished" | tee -a $LOG_FILE
 #read -p"Press [Enter] key to continue..."
@@ -142,20 +150,20 @@ echo -e "(`date`) 1.5 start merge fastq " | tee -a $LOG_FILE
 
 
 cd $WORK_DIR
+date | tee -a $LOG_FILE_STEP
 while read line; do
     prefix=$(echo -e "$line" | cut -f1 -d$'\t')
     eval "cat ${prefix}_* > ${prefix}.fastq"  
     echo "(`date`)$prefix"
-done<$BARCODE_FILE | tee -a $LOG_FILE
-
+done<$BARCODE_FILE | tee -a $LOG_FILE_STEP
+date | tee -a $LOG_FILE_STEP
 
 echo -e "############################################################"| tee -a $LOG_FILE
 echo -e "(`date`) 1.6  start remove  original fastq " | tee -a $LOG_FILE
 #delete the files
-rm *_*.fastq 
-
+rm *_*.fastq | tee -a $LOG_FILE_STEP 
 ls -lght >> $LOG_FILE
-rm unmatched*
+#rm unmatched*
 
 wait;echo -e "(`date`) 1.6 unmatched removed " | tee -a $LOG_FILE
 
@@ -163,9 +171,13 @@ echo -e "############################################################" | tee -a 
 echo -e "(`date`) Starting Part 1.7: qc of consolidated FASTQ files" | tee -a $LOG_FILE
 
 WORKING_DIR=$WORK_DIR'/fastqc';mkdir -p $WORKING_DIR
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
+
+data | tee -a $LOG_FILE_STEP
 ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i \
                       fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {} \
-                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
+                      1>>$LOG_FILE_STEP 2>>$LOG_ERR_FILE
+data | tee -a $LOG_ERR_FILE
 wait;echo -e "(`date`) Step 1.7 QC consolidated fastq Finshed!" | tee -a $LOG_FILE
 
 
@@ -173,12 +185,14 @@ echo -e "############################################################" | tee -a 
 echo -e "(`date`) Starting Step 2: trimming" | tee -a $LOG_FILE
 WORKING_DIR=$PARENT_DIR'/02trim'
 mkdir -p $WORKING_DIR
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
 
-
+date | tee -a $LOG_FILE_STEP
 ls -1 *.fastq | xargs -n1 -P $TOTAL_PROC_NO -i \
                       cutadapt -f fastq -e 0.1 -O 6 -q 20 -m 35 -a AGATCGGAAGAGC  {} \
                       -o $WORKING_DIR"/"{}".trim.fastq" \
-                      1>>$LOG_ERR_FILE 2>> $LOG_FILE        
+                      1>>$LOG_ERR_FILE 2>> $LOG_FILE_STEP
+date | tee -a $LOG_FILE_STEP
 wait;echo -e "(`date`) Step 2: trimming  Finshed!"| tee -a $LOG_FILE
 
 
@@ -187,9 +201,13 @@ echo -e "(`date`) Starting Step 2.1: QC of trimed QC files" | tee -a $LOG_FILE
 
 cd $WORKING_DIR
 WORKING_DIR=$WORKING_DIR'/fastqc';mkdir -p $WORKING_DIR
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
+
+date | tee -a $LOG_FILE_STEP
 ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i\
                       fastqc -t $NPROC_PER_SAMPLE -outdir $WORKING_DIR {}\
-                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
+                      1>>$LOG_FILE_STEP 2>>$LOG_ERR_FILE
+date | tee -a $LOG_ERR_FILE
 wait;echo -e "(`date`)Step 2.1 QC trimed fastq Finshed!" | tee -a $LOG_FILE
 
 
@@ -197,8 +215,9 @@ echo -e "############################################################" | tee -a 
 echo -e "(`date`) Starting Step 3.1: alignment" | tee -a $LOG_FILE
 
 WORKING_DIR=$PARENT_DIR'/03alignment'; mkdir -p $WORKING_DIR;
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
 
-
+date | tee -a $LOG_FILE_STEP
 # --readFilesCommand gunzip -c \
 ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i STAR --genomeDir /opt/ngs_indexes/star/mm10.primary_assembly.gencode.vM6_refchrom.ERCC92.50bp --runThreadN $NPROC_PER_SAMPLE --readFilesIn {} --outSAMunmapped Within --outSAMtype BAM SortedByCoordinate --limitBAMsortRAM 17179869184 --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8\
                       --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999\
@@ -206,7 +225,8 @@ ls -1 *.fastq | xargs -n1 -P $SAMPLE_NO -i STAR --genomeDir /opt/ngs_indexes/sta
                       --alignIntronMax 1000000 --seedSearchStartLmax 30\
                       --outFileNamePrefix $WORKING_DIR'/'{}\
                       --genomeLoad LoadAndKeep\
-                      1>>$LOG_FILE 2>>$LOG_ERR_FILE
+                      1>>$LOG_FILE_STEP 2>>$LOG_ERR_FILE
+date | tee -a $LOG_FILE_STEP
 
 wait;echo -e "`date`: Step 3.1 alignment Finshed!" | tee -a $LOG_FILE
 
@@ -216,9 +236,11 @@ cd $WORKING_DIR
 echo -e "############################################################" | tee -a $LOG_FILE
 echo -e "(`date`) Starting Step 3.2: index bam file" | tee -a $LOG_FILE
 
+date | tee -a $LOG_FILE_STEP
 ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
                     samtools index {} \
-                    1>>$LOG_ERR_FILE 2>>$LOG_FILE
+                    1>>$LOG_ERR_FILE 2>>$LOG_FILE_STEP
+date | tee -a $LOG_FILE_STEP
 wait;echo -e "(`date`) Step 3.2 index bam file Finshed!" | tee -a $LOG_FILE
 
 
@@ -226,11 +248,14 @@ echo -e "############################################################" | tee -a 
 echo -e "(`date`) Starting Step 4.1: filtering the aligned bam files" | tee -a $LOG_FILE
 STEP='04filter'
 WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir -p $WORKING_DIR;
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
 
-
+date | tee -a $LOG_FILE_STEP
 ls -1 *.bam | xargs -n1 -P $SAMPLE_NO -i \
                      filterfun.sh {} $WORKING_DIR $NPROC_PER_SAMPLE \
-                     | tee -a $LOG_FILE
+    | tee -a $LOG_FILE_STEP
+date | tee -a $LOG_FILE_STEP
+
 echo -e "(`date`)  Step 4.1 fiter bam finished" | tee -a $LOG_FILE
 
 
@@ -238,11 +263,15 @@ echo -e "############################################################" | tee -a 
 echo -e "(`date`) Starting Step 4.2: indexing the filtered bam" | tee -a $LOG_FILE
 
 cd $WORKING_DIR
+date | tee -a $LOG_FILE_STEP
 ls *.bam | parallel --progress -j $SAMPLE_NO samtools index {} 
-                    1>>$LOG_ERR_FILE 2>>$LOG_FILE
+                    1>>$LOG_ERR_FILE 2>>$LOG_FILE_STEP
 
 prefix=".txt"		
-ls *.bam |while read data; do samtools flagstat "$data" > "$data"${prefix}  & done
+ls *.bam |while read data; do samtools flagstat "$data" > "$data"${prefix}  & done | tee -a $LOG_FILE_STEP
+
+date | tee -a $LOG_FILE_STEP
+
 echo -e "(`date`)  finished Step 4.2: indexing the filtered bam" | tee -a $LOG_FILE
 
 echo -e "############################################################" | tee -a $LOG_FILE
@@ -250,6 +279,7 @@ echo -e " (`date`) Starting Step 4.3: qualimap QC the mapping" | tee -a $LOG_FIL
 
 STEP='a_qulimap'
 WORKING_DIR=$WORKING_DIR'/'$STEP; mkdir -p $WORKING_DIR;
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
 
 qualmapfun (){
     int1=1;int2=3;
@@ -271,8 +301,9 @@ qualmapfun (){
 }
 
 
-
-ls *.bam | qualmapfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE
+date | tee -a $LOG_FILE_STEP
+ls *.bam | qualmapfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE_STEP
+date | tee -a $LOG_FILE_STEP
 wait;echo -e "(`date`) Step 4.3 Finshed!" | tee -a $LOG_FILE
 
 echo -e "############################################################" | tee -a $LOG_FILE
@@ -281,9 +312,10 @@ echo -e "(`date`)Starting Step 5: generate the counts file " | tee -a $LOG_FILE
 
 STEP='05counts'
 WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir -p $WORKING_DIR;
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
 
 
-featureCounts -T $TOTAL_PROC_NO -s 2 -t exon -g gene_id -a /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.ERCC.annotation.gtf -o $WORKING_DIR/counts-gene.txt *.bam 1>>$LOG_ERR_FILE 2>>$LOG_FILE
+featureCounts -T $TOTAL_PROC_NO -s 2 -t exon -g gene_id -a /opt/ngs_indexes/models/mm/mm10/gencode.vM6.refchrom.ERCC.annotation.gtf -o $WORKING_DIR/counts-gene.txt *.bam 1>>$LOG_ERR_FILE 2>>$LOG_FILE_STEP
 
 wait;echo -e "(`date`) Step 5 Finshed!" | tee -a $LOG_FILE
 
@@ -293,13 +325,18 @@ echo -e "(`date`)Starting Step 6: make tracks " | tee -a $LOG_FILE
 STEP='06tacks'
 WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir -p $WORKING_DIR;
 
+
+LOG_FILE_STEP=$WORK_DIR"/log.txt"
+
+date | tee -a $LOG_FILE_STEP
 trackfun (){
     while read data; do
         nameStr=$(echo "$data"| cut -f1 -d".")
         bam2wig.py -i "$data" -s /opt/ngs_indexes/genomes/mm/mm10.chrom.sizes -t 500000000 -d '+-,-+' -o $WORKING_DIR/$nameStr".bw" & 
     done
 }
-ls *.bam | trackfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE
+ls *.bam | trackfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE_STEP
+date | tee -a $LOG_FILE_STEP
 
 echo -e "(`date`)finished tracks & now deleting wig files " | tee -a $LOG_FILE
 
