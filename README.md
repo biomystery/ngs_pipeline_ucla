@@ -1,12 +1,13 @@
 # README #
-
-This README would normally document whatever steps are necessary to get your application up and running.
+* Quick summary
+This is the shell code I wrote for processing RNAseq, chromatin-associated RNAseq and ChipSeq data. 
 
 ### What is this repository for? ###
 
-* Quick summary
+
 * Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+Version 0.1 
+
 
 ### How do I get set up? ###
 
@@ -26,4 +27,5 @@ This README would normally document whatever steps are necessary to get your app
 ### Who do I talk to? ###
 
 * Repo owner or admin
+zhangc518# gmail.com 
 * Other community or team contact
