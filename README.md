@@ -1,12 +1,11 @@
 # README #
-* Quick summary
-This is the shell code I wrote for processing RNAseq, chromatin-associated RNAseq and ChipSeq data. 
+
+
 
 ### What is this repository for? ###
+* This is the shell code I wrote for processing RNAseq, chromatin-associated RNAseq and ChipSeq data. 
 
-
-* Version
-Version 0.1 
+* Version 0.1 
 
 
 ### How do I get set up? ###
