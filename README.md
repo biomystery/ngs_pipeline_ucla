@@ -1,4 +1,4 @@
-# README #
+# Scripts for NGS_pipeline #
 
 
 
@@ -11,4 +11,4 @@
 ### Who do I talk to? ###
 
 * Repo owner or admin
-zhangc518# gmail.com 
+zhangc518# gmail.com
