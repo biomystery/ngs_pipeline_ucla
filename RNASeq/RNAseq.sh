@@ -306,7 +306,7 @@ wait;echo -e "(`date`) Step 5 Finshed!" | tee -a $LOG_FILE
 echo -e "############################################################" | tee -a $LOG_FILE
 echo -e "(`date`)Starting Step 6: make tracks " | tee -a $LOG_FILE
 
-STEP='06tacks'
+STEP='06tracks'
 WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir -p $WORKING_DIR;
 
 trackfun (){
@@ -323,11 +323,12 @@ cd $WORKING_DIR; rm *.wig
 wait;echo -e "(`date`) Step 6 Finshed!" | tee -a $LOG_FILE
 #read -p"Press [Enter] key to continue..."
 
-#echo -e "############################################################" | tee -a $LOG_FILE
-#echo -e "(`date`)Starting Step 7: compress all fastq files" | tee -a $LOG_FILE
+echo -e "############################################################" | tee -a $LOG_FILE
+echo -e "(`date`)Starting Step 7: mutliqc & compress all fastq files" | tee -a $LOG_FILE
 
 
-#cd $PARENT_DIR
+cd $PARENT_DIR
+mutliqc . -o ./07multiqc & 
 #find . -type f -name "*.fastq" | parallel -j $TOTAL_PROC_NO --eta gzip -9 | tee -a $LOG_FILE
 #wait;echo -e "(`date`) Step 7 Finshed!" | tee -a $LOG_FILE
 #read -p "Press [Enter] key to continue..."
