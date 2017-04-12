@@ -1,4 +1,5 @@
-#!/bin/bash
+
+
 echo -e "############################################################"
 echo -e "(`date`) Welcome to the RNAseq Auto analysis ver 0.0"
 echo -e "############################################################"
@@ -30,7 +31,7 @@ echo -e "(`date`) example: \n" | tee -a $LOG_FILE
 echo -e "(`date`) example: \n" | tee -a $LOG_FILE
 echo -e "(`date`) Wt-0	ATTCCTT
 Wt-TNF-05	ACTGATA
-Wt-TNF-1	GAGTGGA
+echo -e " total: $TOTAL_PROC_NO processors will be using for this analysis \n" | te\Wt-TNF-1	GAGTGGA
 Wt-TNF-3	CGTACGT
 \n" | tee -a $LOG_FILE
 #read -p"Press [Enter] key to when you finished construct the file"
@@ -51,7 +52,7 @@ while read line; do
 
 
 #number  of processors per sample for fastqc 
-NPROC_PER_SAMPLE=2
+NPROC_PER_SAMPLE=4
 echo -e " $NPROC_PER_SAMPLE processors per sample \n" | tee -a $LOG_FILE
 TOTAL_PROC_NO=$((SAMPLE_NO*NPROC_PER_SAMPLE)) # calculate number of total processor for the user
 echo -e " total: $TOTAL_PROC_NO processors will be using for this analysis \n" | tee -a $LOG_FILE
@@ -69,7 +70,7 @@ STEP="00raw"; WORKING_DIR=$PARENT_DIR"/"$STEP
 LOG_FILE_STEP=$WORKING_DIR"/log.txt"
 mkdir -p $WORKING_DIR; cd $WORKING_DIR
 date| tee -a $LOG_FILE_STEP
-#grab_bscrc.sh $PASSWD_INFO_INPUT | tee - a $LOG_FILE_STEP
+grab_bscrc.sh $PASSWD_INFO_INPUT | tee - a $LOG_FILE_STEP
 
 wait;echo -e "(`date`) downloaded the raw qseq data" | tee -a $LOG_FILE_STEP
 RAW_DIR=$(echo $PASSWD_INFO_INPUT|cut -f1 -d":"); RAW_DIR=$WORKING_DIR/$RAW_DIR; cd $RAW_DIR
@@ -78,7 +79,7 @@ echo -e "(`date`) there are total: `ls -1 | wc -l`  raw qseq data" | tee -a $LOG
 echo -e "############################################################"| tee -a $LOG_FILE
 echo -e "(`date`) 1.2 starting decompressing " | tee -a $LOG_FILE
 date| tee -a $LOG_FILE_STEP
-#ls -1 *.gz | parallel -j $TOTAL_PROC_NO gunzip |tee -a $LOG_FILE
+ls -1 *.gz | parallel -j $TOTAL_PROC_NO gunzip |tee -a $LOG_FILE
 wait;echo -e "(`date`) decompressed the raw qseq data" | tee -a $LOG_FILE
 
 echo -e "############################################################"| tee -a $LOG_FILE
@@ -371,9 +372,8 @@ echo -e "############################################################" | tee -a 
 
 echo -e "(`date`)Starting Step 6: make tracks " | tee -a $LOG_FILE
 
-STEP='06tacks'
+STEP='06tracks'
 WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir -p $WORKING_DIR;
-
 
 LOG_FILE_STEP=$WORKING_DIR"/log.txt"
 LOG_ERR_FILE=$WORKING_DIR"/err.txt"
@@ -386,6 +386,16 @@ trackfun (){
 }
 ls *.bam | trackfun 1>>$LOG_ERR_FILE 2>>$LOG_FILE_STEP
 date | tee -a $LOG_FILE_STEP
+
+STEP='07multiqc'
+WORKING_DIR=$PARENT_DIR'/'$STEP; mkdir -p $WORKING_DIR;
+multiqc . -o ./07multiqc &
+
+
+# END
+
+
+
 
 
 
